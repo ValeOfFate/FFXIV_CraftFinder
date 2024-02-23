@@ -7,10 +7,34 @@
     <link rel="stylesheet" href="formatting.css">
 </head>
 
-<body onload="Update()">
+<body onload="Startup()">
 
+    <select name="Region" id="region">
+        <option value="North-America">North-America</option>
+        <option value="Europe">Europe</option>
+        <option value="Japan">Japan</option>
+        <option value="Oceania">Oceania</option>
+        <option value="China">China</option>
+    </select>
+
+    <select name="Lang" id="lang">
+        <option value="en">English</option>
+        <option value="de">German</option>
+        <option value="fr">French</option>
+        <option value="ja">Japanese</option>
+    </select>
+
+    <select name="NumEntries" id="entries">
+        <option value=5>5</option>
+        <option value=10>10</option>
+        <option value=15>15</option>
+        <option value=20>20</option>
+    </select>
+
+    <button type="button" onclick="Update();">Update</button>
+    
     <table id="Data-Table">
-        <tr><td>An Error Occured</td></tr>
+        <tr><td>Data Loading - If this takes longer then a few seconds, something may be wrong</td></tr>
     </table>
 
 </body>

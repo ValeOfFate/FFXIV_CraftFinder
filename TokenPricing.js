@@ -7,25 +7,25 @@ var itemIDs = '';
 var worldVal= 'North-America';
 var numListings = '5'
 var numEntries = '0'
+var langCode = 'en';
 var hq = true;
 var itemListings = {};
 var mapVals = {};
-var langCode = 'en';
 
-// 5 Second Update Button
-async  function Update() {
+var activeProcessing = false;
+
+async function Startup() {
+
+    activeProcessing = true;
 
     // Maps loading
     const mapRequest = await loadMaps();
     const parsedMaps = await mapRequest.json();
+    mapVals = parsedMaps;
     
     // Loads IDs to call for listing info
     loadIDs(parsedMaps);
     
-    // console.log(parsedMaps)
-    //console.log(itemIDs);
-
-
     // Unsorted Data loading
     const unsortedData = await getData(
         'https://universalis.app/api/v2/' 
@@ -34,8 +34,6 @@ async  function Update() {
         + '&entries=' + numEntries
         + '&hq=' + hq);
     const parsedData = await unsortedData.json();
-    // console.log(parsedData.items); 
-    
     
     // Turns Data into a condensed unsorted JSON object
     generateJSON(parsedData.items);
@@ -43,25 +41,79 @@ async  function Update() {
     // Maps data
     mapJSON(itemListings, parsedMaps);
     formatJSON(itemListings);
-    console.log(itemListings);
+    
+    // Parse the chart to obtain JSON in sorted order
+    var sortedJSON = sortData();
 
+    // Print out the current table
+    loadTable('Data-Table', ['Item_ID', 'Map_Name', 'World_Location','Retainer_Name', 'Item_Price', 'Item_Quan', 'Item_PPU', 'Map_Imports', 'Cost_PerImport'], sortedJSON);
+
+    activeProcessing = false;
+}
+
+// Updates based on current vals
+async  function Update() {
+
+    // Only works if an update isnt currently occuring
+    if (activeProcessing == false) {
+
+        // Sets itself as currently updating
+        activeProcessing = true;
+
+        // Resets the item json
+        itemListings = {};
+
+        worldVal = $("#region").val();
+        langCode =  $("#lang").val();
+        numListings =  $("#entries").val();
+
+        // Unsorted Data loading
+        const unsortedData = await getData(
+            'https://universalis.app/api/v2/' 
+            + worldVal + '/' + itemIDs 
+            + '?listings=' + numListings 
+            + '&entries=' + numEntries
+            + '&hq=' + hq);
+        const parsedData = await unsortedData.json();
+        
+        // Turns Data into a condensed unsorted JSON object
+        generateJSON(parsedData.items);
+        
+        // Maps data
+        mapJSON(itemListings, mapVals);
+        formatJSON(itemListings);
+        
+        // Parse the chart to obtain JSON in sorted order
+        var sortedJSON = sortData();
+
+        // Print out the current table
+        loadTable('Data-Table', ['Item_ID', 'Map_Name', 'World_Location','Retainer_Name', 'Item_Price', 'Item_Quan', 'Item_PPU', 'Map_Imports', 'Cost_PerImport'], sortedJSON);
+        activeProcessing = false;
+        console.log("Processing");
+    }
+
+    
+    
+
+}
+// Returns sorted data as JSON (Note: Changes formatting)
+function sortData() {
+
+    // Convert ItemListings into array for ease of sorting
     var sortedData = [];
     $.each(itemListings, function(index, data) {
         sortedData.push([index, [data]]);
     })
-
-    console.log(sortedData[0]);
-
+    
+    // Creates custom function to use Cost_PerImport as sorting case
     sortedData.sort(function (a, b) {
-
-        // a and b will be two instances of your object from your list
     
-        // possible return values
-        var a1st = -1; // negative value means left item should appear first
-        var b1st =  1; // positive value means right item should appear first
-        var equal = 0; // zero means objects are equal
+        // Value Weights
+        var a1st = -1;
+        var b1st =  1;
+        var equal = 0;
     
-        // compare your object's property values and determine their order
+        // Compare to get a proper weight
         if (b[1][0].Cost_PerImport < a[1][0].Cost_PerImport) {
             return b1st;
         }
@@ -73,16 +125,12 @@ async  function Update() {
         }
     });
 
-    var testJSON = JSON.parse(JSON.stringify(sortedData));
-    console.log(testJSON);
-    console.log(sortedData[0]);
-
-
-    loadTable('Data-Table', ['Item_ID', 'Map_Name', 'World_Location','Retainer_Name', 'Item_Price', 'Item_Quan', 'Item_PPU', 'Map_Imports', 'Cost_PerImport'], testJSON);
+    // Parse the chart to obtain JSON in sorted order
+    return JSON.parse(JSON.stringify(sortedData));
 }
 
 function loadTable(tableID, fields, data) {
-    //$('#' + tableId).empty(); //not really necessary
+    $('#' + tableID).empty(); //not really necessary
     var rows = '';
     var row = '<tr>';
     $.each(tableLabels, function(index, label) {
@@ -111,8 +159,12 @@ function loadTable(tableID, fields, data) {
 // Gets data request from the Universalis API
 async function getData(url) {
 
+    try {
     let x = await fetch(url)
     return x;
+    } catch (error) {
+        console.log(error);
+    }
 }    
 
 // Gets maps request from Github
